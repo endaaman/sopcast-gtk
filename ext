@@ -1,0 +1,12 @@
+#!/usr/bin/env node
+
+
+function register() {
+  setTimeout(()=> {
+    console.log(new Date())
+    register()
+  }, 1000)
+}
+
+
+register()

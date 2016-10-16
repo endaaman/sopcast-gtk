@@ -1,0 +1,52 @@
+#!/usr/bin/env node
+
+'use strict'
+
+// USER SETTINGS
+const localPort = 4545
+
+const dialog = require('dialog')
+const spawn = require('child_process').spawn
+const url = require('url')
+
+const castUrl = process.argv[2]
+const parts = url.parse(castUrl)
+const destUrl = `${parts.protocol}//${parts.hostname}${parts.path}`
+const destPort = parts.port
+
+const sopcast = spawn('sopcast', [destUrl, destPort, localPort])
+
+let started = false
+let halted = false
+
+const openVlc = ()=>{
+    if (halted) {
+        return
+    }
+    if (started) {
+        return
+    }
+    started = true
+    console.log('open VLC..')
+    dialog.info(`http://localhost:${localPort}/tv.asf`)
+    const vlc = spawn('vlc', [`http://localhost:${localPort}/tv.asf`])
+    vlc.on('close', (code)=>{
+        console.log('vlc close')
+        sopcast.kill('SIGKILL')
+    })
+}
+
+
+sopcast.stdout.on('data', (log)=>{
+    if (/I START/.test('' + log)) {
+        openVlc()
+    }
+})
+
+sopcast.on('close', ()=>{
+    halted = true
+    if (started) {
+        return
+    }
+    dialog.info(`not available cast url: \`${castUrl}\``)
+})
